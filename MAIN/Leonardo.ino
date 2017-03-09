@@ -47,6 +47,9 @@ void setup() {
   // Builtin LED
   pinMode(13, OUTPUT);
 
+  pinMode(A4, OUTPUT);
+  pinMode(A5, OUTPUT);
+  
   // Setup incoming colour pins.
   pinMode(BLUE, INPUT);
   pinMode(RED, INPUT);
@@ -63,7 +66,7 @@ void setup() {
   // and the white line. This only needs to done once.
   //
   int i;
-  for (i = 0; i < 250; i++)
+  for (i = 0; i < 400; i++)
   {
   qtr.calibrate();
   qtr.emittersOn();
@@ -108,8 +111,8 @@ void loop() {
 
 
   // Let the robot travel straight intialally or is perfectly over the line (unlikely). 
-  servor.write(83);
-  servol.write(104);
+  servor.write(86);
+  servol.write(100);
 
   // Turn the robot LEFT if the Error is greater than 3000.
   if (error > 3000){
@@ -123,13 +126,18 @@ void loop() {
        turns = 1;
   }
 
+  delay(50);
   // Check if the incoming colour from the Nano is Yellow.
   // If this is true the Colour(turn_state, jumped_gap) function
   // is run.
   if (digitalRead(YELLOW) == HIGH)
   {
-    Serial.println("Reading Yellow");
-    Colour(turns, 0);
+    delay(100);
+    if (digitalRead(YELLOW) == HIGH)
+    {
+      Serial.println("Reading Yellow");
+      Colour(turns, 0);
+    }
   }
 
 
@@ -142,6 +150,7 @@ void loop() {
 //
 if (sensors[1] != 1000 && sensors[2] != 1000 && sensors[3] != 1000 && sensors[4] != 1000 && sensors[5] != 1000 && sensors[6] != 1000 && sensors[7] != 1000)
 {
+  delay(200);
   for (unsigned int i = 0; i < 20; i++)
   {
     //SensorPrint();
@@ -174,16 +183,21 @@ if (sensors[1] != 1000 && sensors[2] != 1000 && sensors[3] != 1000 && sensors[4]
 //
 void Drive()
 {
+   // 94 ==  LEFT Stopped Counterclockwise.
+      // 93 ==  RIGHT Stopped Clockwise.
+
+      // 104 ==  LEFT Full Speed Clockwise.
+      // 83 ==  RIGHT Full Speed Counterclockwise.
   while(1)
   {
-    //ColourPrint();
+    ColourPrint();
     int turns;
     unsigned int sensors[8];
     int position = qtr.readLine(sensors);
     int error = position - 1000;
     digitalWrite(10, HIGH);
-    servor.write(83);       //goes straight if it doesnt match anything
-    servol.write(104);
+    servor.write(86);       //goes straight if it doesnt match anything
+    servol.write(100);
     if (error > 3000){
      servol.write(94); // Stopped L, Turning Left
      turns = 0;
@@ -192,14 +206,14 @@ void Drive()
        servor.write(93); // Stopped R, Turning Right
        turns = 1;
     }
-
+    delay(90);
     if (digitalRead(YELLOW) == HIGH)
     {
     Serial.println("Reading Yellow");
-    Colour(turns, 0);
+    Colour(turns, 1);
     }
  
-    delay(70);
+    delay(100);
   }
 }
 
@@ -275,78 +289,111 @@ bool Gap()
 
 // FOUND YELLOW LINE
 //
-void Colour(int turn, int drive)
+void Colour(int turn, int gap)
 {
+  digitalWrite(A4, LOW);
+  digitalWrite(A5, LOW);
   ColourPrint();
   Serial.println("Running Colour Routine...");
-  if (turn == 0) // Yellow LEFT
+  servor.write(83);      
+  servol.write(104);
+  delay(100);
+  if (turn == 1) // Yellow LEFT
   {
     servol.write(94); // Stopped L
     servor.write(83); // Full Speed R
-    delay(2000);
+    delay(1500);
   }
 
-  if (turn == 1) // Yellow RIGHT
+  if (turn == 0) // Yellow RIGHT
   {
     servol.write(104); // Full Speed L
     servor.write(93); // Stopped R 
-    delay(2000);
+    delay(1200);
   }
 
+  digitalWrite(A5, LOW);
+  
   while(1)
   {
     ColourPrint();
-    if (digitalRead(BLUE) == LOW || digitalRead(RED) == LOW)
+    if (digitalRead(BLUE) == LOW && digitalRead(RED) == LOW)
     {
-      servor.write(83);       //goes straight if it doesnt match anything
-      servol.write(104);
-    } else {
-      servol.write(94); // Stopped L
-      servor.write(93); // Stopped R
+     
+      servol.attach(12);
+      servor.attach(11);
+     servor.write(83);       //goes straight if it doesnt match anything
+     servol.write(104);
+      delay(200);
+      servol.detach();
+      servor.detach();
       delay(2000);
-      servol.write(104); // Full Speed L
-      servor.write(93); // Stopped R
-      delay(4000);
+    } else {
+      servol.detach();
+      servor.detach();
+      if (digitalRead(BLUE) == HIGH)
+      {
+        delay(500);
+        if (digitalRead(BLUE) == HIGH)
+        {
+        digitalWrite(A5, HIGH);
+        } else {digitalWrite(A4, HIGH);}
+        delay(1700);
+      }
+
+      if (digitalRead(RED) == HIGH)
+      {
+        delay(500);
+        if (digitalRead(RED) == HIGH)
+        {
+        digitalWrite(A4, HIGH);
+        } else {digitalWrite(A5, HIGH);}
+        delay(1700);
+      }
+      
+      digitalWrite(A4, LOW);
+      digitalWrite(A5, LOW);
+      servol.attach(12);
+      servor.attach(11);
       break;
     }
   }
 
+  if (turn == 1) // YELLOW LEFT
+       {
+          servol.write(104); // Full Speed L
+          servor.write(93); // Stopped R 
+          delay(3700);
+          
+        } else { // YELLOW RIGHT
+          servol.write(94); // Stopped L
+          servor.write(83); // Full Speed R
+          delay(3700);
+        }
+  
    while(1)
    {
     ColourPrint();
-    if (digitalRead(BLACK) == LOW)
+    unsigned int sensors[8];
+    int position = qtr.readLine(sensors);
+    if (sensors[0] == 1000 || sensors[1] == 1000 || sensors[2] == 1000 || sensors[3] == 1000 || sensors[4] == 1000 || sensors[5] == 1000 || sensors[6] == 1000 || sensors[7] == 1000)
     {
-      servor.write(83);       //goes straight if it doesnt match anything
-      servol.write(104);
-    } else if (drive == 0) {
-      if (turn == 1)
+      if (gap == 0)
       {
-        servol.write(104); // Full Speed L
-        servor.write(93); // Stopped R 
-        delay(1000);
-      } else {
-        servol.write(94); // Stopped L
-        servor.write(83); // Full Speed R
-        delay(1000);
-      }
-      loop();
-    } else {
-      if (turn == 1)
-      {
-        servol.write(104); // Full Speed L
-        servor.write(93); // Stopped R 
-        delay(1000);
-      } else {
-        servol.write(94); // Stopped L
-        servor.write(83); // Full Speed R
-        delay(1000);
-      }
-      Drive();
+        loop();
+      }  else {
+        Drive();  
     }
-   }
-}
+    } else {
+        servor.write(83);       //goes straight if it doesnt match anything
+        servol.write(104);
+        
+        }
+    }
+  }   
+    
 
-
+ 
 void SensorPrint()
 {
   unsigned int sensors[8];
@@ -384,6 +431,12 @@ void SensorPrint()
 
 void ColourPrint()
 {
+//  servol.detach();
+//      servor.detach();
+//  while(1){
+    digitalWrite(A4, LOW);
+    digitalWrite(A5, LOW);
+    
     if (digitalRead(YELLOW) == HIGH)
     {
     Serial.println("Reading Yellow");
@@ -391,14 +444,20 @@ void ColourPrint()
     if (digitalRead(RED) == HIGH)
     {
     Serial.println("Reading Red");
+    //digitalWrite(A4, HIGH);
+    delay(10);
     }
     if (digitalRead(BLUE) == HIGH)
     {
     Serial.println("Reading Blue");
+    //digitalWrite(A5, HIGH);
+    delay(10);
     }
     if (digitalRead(BLACK) == HIGH)
     {
     Serial.println("Reading Black");
     }
+  
+  //}
 }
    
