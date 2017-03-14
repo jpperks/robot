@@ -126,13 +126,12 @@ void loop() {
        turns = 1;
   }
 
-  delay(50);
   // Check if the incoming colour from the Nano is Yellow.
   // If this is true the Colour(turn_state, jumped_gap) function
   // is run.
   if (digitalRead(YELLOW) == HIGH)
   {
-    delay(100);
+    delay(10);
     if (digitalRead(YELLOW) == HIGH)
     {
       Serial.println("Reading Yellow");
@@ -140,6 +139,7 @@ void loop() {
     }
   }
 
+  delay(270);
 
 // INITIAL GAP CHECKING
 //
@@ -150,13 +150,14 @@ void loop() {
 //
 if (sensors[1] != 1000 && sensors[2] != 1000 && sensors[3] != 1000 && sensors[4] != 1000 && sensors[5] != 1000 && sensors[6] != 1000 && sensors[7] != 1000)
 {
-  delay(200);
-  for (unsigned int i = 0; i < 20; i++)
+  
+  //delay(100);
+  for (unsigned int i = 0; i < 250; i++)
   {
     //SensorPrint();
-    servor.write(83);       //goes straight if it doesnt match anything
-    servol.write(104);
-    int turns;
+    //servor.write(83);       //goes straight if it doesnt match anything
+    //servol.write(104);
+    //int turns;
     unsigned int sensors[8];
     int position = qtr.readLine(sensors);
     int error = position - 1000;
@@ -164,13 +165,13 @@ if (sensors[1] != 1000 && sensors[2] != 1000 && sensors[3] != 1000 && sensors[4]
 
     if (sensors[1] == 1000 || sensors[2] == 1000 || sensors[3] == 1000 || sensors[4] == 1000 || sensors[5] == 1000 || sensors[6] == 1000 || sensors[7] == 1000)
     { 
-      break;
+      loop();
     }
     delay(1);
   }
   if (sensors[1] != 1000 && sensors[2] != 1000 && sensors[3] != 1000 && sensors[4] != 1000 && sensors[5] != 1000 && sensors[6] != 1000 && sensors[7] != 1000)
   { 
-    if (Gap() == true)
+    if (Gap(turns) == true)
     {
       Drive();
     }
@@ -206,18 +207,21 @@ void Drive()
        servor.write(93); // Stopped R, Turning Right
        turns = 1;
     }
-    delay(90);
-    if (digitalRead(YELLOW) == HIGH)
-    {
-    Serial.println("Reading Yellow");
-    Colour(turns, 1);
-    }
- 
-    delay(100);
-  }
-}
 
-bool Gap()
+    for(unsigned long i=0; i <400; i++)
+    {
+      if (digitalRead(YELLOW) == HIGH)
+      {
+      Serial.println("Reading Yellow");
+      Colour(turns, 1);
+      }
+      delay(1);
+    }
+
+    }
+  }
+
+bool Gap(int turn)
 {
   // Read the IR values again.
   unsigned int sensors[8];
@@ -231,7 +235,7 @@ bool Gap()
   {
     servol.write(94); // Stopped L
     servor.write(83); // Full Speed R
-    delay(2000);
+    delay(1500);
   } else {return false;}
 
   // Check if over the line and turn RIGHT.
@@ -302,14 +306,14 @@ void Colour(int turn, int gap)
   {
     servol.write(94); // Stopped L
     servor.write(83); // Full Speed R
-    delay(1500);
+    delay(1750);
   }
 
   if (turn == 0) // Yellow RIGHT
   {
     servol.write(104); // Full Speed L
     servor.write(93); // Stopped R 
-    delay(1200);
+    delay(1400);
   }
 
   digitalWrite(A5, LOW);
@@ -363,12 +367,12 @@ void Colour(int turn, int gap)
        {
           servol.write(104); // Full Speed L
           servor.write(93); // Stopped R 
-          delay(3700);
+          delay(2220);
           
         } else { // YELLOW RIGHT
           servol.write(94); // Stopped L
           servor.write(83); // Full Speed R
-          delay(3700);
+          delay(3350);
         }
   
    while(1)
@@ -380,7 +384,7 @@ void Colour(int turn, int gap)
     {
       if (gap == 0)
       {
-        loop();
+        break;
       }  else {
         Drive();  
     }
@@ -389,7 +393,7 @@ void Colour(int turn, int gap)
         servol.write(104);
         
         }
-    }
+    } loop();
   }   
     
 
